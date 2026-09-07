@@ -48,15 +48,28 @@ function renderContent(content: string) {
     ));
 }
 
+function formatDate(epochSeconds: number): string {
+  return new Date(epochSeconds * 1000).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export default async function BlogPostPage(props: PageProps<"/blog/[slug]">) {
   const { slug } = await props.params;
   const post = await getPost(slug);
   if (!post) notFound();
 
   return (
-    <article>
-      <h1>{post.title}</h1>
-      {renderContent(post.content)}
-    </article>
+    <div className="section">
+      <div className="container">
+        <article className="post-content" style={{ maxWidth: "68ch" }}>
+          <div className="post-meta">{formatDate(post.published_at)}</div>
+          <h1>{post.title}</h1>
+          <div style={{ marginTop: 24 }}>{renderContent(post.content)}</div>
+        </article>
+      </div>
+    </div>
   );
 }

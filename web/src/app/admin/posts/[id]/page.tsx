@@ -53,7 +53,9 @@ export default function EditPostPage() {
     <div>
       <h1>Edit Post</h1>
       <PostForm initialValues={initialValues} onSubmit={handleSubmit} submitLabel="Save" />
-      <button onClick={handleDelete}>Delete post</button>
+      <button className="btn btn-secondary" style={{ marginTop: 12 }} onClick={handleDelete}>
+        Delete post
+      </button>
     </div>
   );
 }

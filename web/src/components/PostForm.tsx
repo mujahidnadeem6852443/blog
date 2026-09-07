@@ -35,43 +35,29 @@ export function PostForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="stack" style={{ maxWidth: 680, marginTop: 16 }}>
       <div>
-        <label>
-          Title{" "}
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </label>
+        <label>Title</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
       <div>
-        <label>
-          Slug{" "}
-          <input value={slug} onChange={(e) => setSlug(e.target.value)} required />
-        </label>
+        <label>Slug</label>
+        <input value={slug} onChange={(e) => setSlug(e.target.value)} required />
       </div>
       <div>
-        <label>
-          Content
-          <br />
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={14}
-            cols={60}
-            required
-          />
-        </label>
+        <label>Content</label>
+        <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={14} required />
       </div>
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            checked={status === "published"}
-            onChange={(e) => setStatus(e.target.checked ? "published" : "draft")}
-          />{" "}
-          Published
-        </label>
-      </div>
-      <button type="submit" disabled={saving}>
+      <label className="row" style={{ cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          style={{ width: "auto" }}
+          checked={status === "published"}
+          onChange={(e) => setStatus(e.target.checked ? "published" : "draft")}
+        />
+        Published
+      </label>
+      <button type="submit" className="btn btn-primary" disabled={saving}>
         {saving ? "Saving…" : submitLabel}
       </button>
       {error && <p role="alert">{error}</p>}

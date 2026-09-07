@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
 
@@ -14,7 +13,6 @@ interface PostSummary {
 }
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
   const [posts, setPosts] = useState<PostSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,17 +39,13 @@ export default function AdminDashboardPage() {
     loadPosts();
   }
 
-  async function handleLogout() {
-    await fetch(`${API_URL}/api/logout`, { method: "POST", credentials: "include" });
-    router.replace("/admin/login");
-  }
-
   return (
     <div>
-      <h1>Admin</h1>
+      <h1>Posts</h1>
       <p>
-        <Link href="/admin/posts/new">New post</Link> &middot;{" "}
-        <button onClick={handleLogout}>Log out</button>
+        <Link href="/admin/posts/new" className="btn btn-primary" style={{ marginTop: 12 }}>
+          New post
+        </Link>
       </p>
 
       {error && <p role="alert">{error}</p>}
@@ -61,27 +55,26 @@ export default function AdminDashboardPage() {
       ) : posts.length === 0 ? (
         <p>No posts yet.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {posts.map((post) => (
-              <tr key={post.id}>
-                <td>{post.title}</td>
-                <td>{post.status}</td>
-                <td>
-                  <Link href={`/admin/posts/${post.id}`}>Edit</Link>{" "}
-                  <button onClick={() => handleDelete(post.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="stack" style={{ marginTop: 20 }}>
+          {posts.map((post) => (
+            <div key={post.id} className="card row" style={{ justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>{post.title}</div>
+                <span className="chip" style={{ marginTop: 6 }}>
+                  {post.status}
+                </span>
+              </div>
+              <div className="row">
+                <Link href={`/admin/posts/${post.id}`} className="btn btn-secondary">
+                  Edit
+                </Link>
+                <button className="btn btn-secondary" onClick={() => handleDelete(post.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

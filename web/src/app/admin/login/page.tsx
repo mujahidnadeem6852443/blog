@@ -35,12 +35,12 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div>
-      <h1>Admin Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Password{" "}
+    <div style={{ maxWidth: 360, margin: "48px auto" }}>
+      <div className="card">
+        <h1 style={{ fontSize: "1.5rem" }}>Admin Login</h1>
+        <form onSubmit={handleSubmit} className="stack" style={{ marginTop: 20 }}>
+          <div>
+            <label>Password</label>
             <input
               type="password"
               value={password}
@@ -48,13 +48,13 @@ export default function AdminLoginPage() {
               required
               autoFocus
             />
-          </label>
-        </div>
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-      {error && <p role="alert">{error}</p>}
+          </div>
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? "Logging in…" : "Log in"}
+          </button>
+          {error && <p role="alert">{error}</p>}
+        </form>
+      </div>
     </div>
   );
 }
