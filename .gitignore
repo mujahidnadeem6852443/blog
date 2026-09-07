@@ -12,6 +12,7 @@ api/.wrangler/
 # env / secrets
 .env
 .env*.local
+.dev.vars
 
 # OS
 .DS_Store

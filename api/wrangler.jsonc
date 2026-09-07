@@ -2,5 +2,14 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "blog-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-05-03"
+  "compatibility_date": "2026-05-03",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "blog-db",
+      // Placeholder — replaced with the real UUID once `wrangler d1 create` runs
+      // against your Cloudflare account. Local dev works fine without it.
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ]
 }
