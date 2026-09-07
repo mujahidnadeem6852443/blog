@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blog-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-03",
+  "vars": {
+    // Comma-separated.
+    "ALLOWED_ORIGINS": "http://localhost:3000,http://localhost:3001,http://localhost:8788,https://blog-web.batmancodes2.workers.dev"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "blog-db",
+      "database_id": "424feb15-e711-4648-9ec5-1189f5d7ff3d"
+    }
+  ]
+}
