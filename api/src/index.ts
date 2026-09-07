@@ -1,4 +1,5 @@
 import { corsHeaders, handlePreflight, resolveCorsOrigin } from "./cors";
+import { getAdminPage, getPublicPage, listAdminPages, updatePage } from "./content";
 import { json } from "./http";
 import {
   createPost,
@@ -29,6 +30,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   const publicPostMatch = pathname.match(/^\/api\/posts\/([^/]+)$/);
   if (publicPostMatch && method === "GET") return getPublishedPost(env, publicPostMatch[1]);
 
+  const publicPageMatch = pathname.match(/^\/api\/pages\/([^/]+)$/);
+  if (publicPageMatch && method === "GET") return getPublicPage(env, publicPageMatch[1]);
+
   if (pathname.startsWith("/api/admin/")) {
     const unauthorized = await requireSession(request, env);
     if (unauthorized) return unauthorized;
@@ -44,6 +48,15 @@ async function route(request: Request, env: Env): Promise<Response> {
       if (method === "GET") return getPostById(env, id);
       if (method === "PUT") return updatePost(request, env, id);
       if (method === "DELETE") return deletePost(env, id);
+    }
+
+    if (pathname === "/api/admin/pages" && method === "GET") return listAdminPages(env);
+
+    const adminPageMatch = pathname.match(/^\/api\/admin\/pages\/([^/]+)$/);
+    if (adminPageMatch) {
+      const page = adminPageMatch[1];
+      if (method === "GET") return getAdminPage(env, page);
+      if (method === "PUT") return updatePage(request, env, page);
     }
   }
 
