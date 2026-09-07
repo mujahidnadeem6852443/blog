@@ -4,8 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-05-03",
   "vars": {
-    // Comma-separated. No production frontend URL exists yet — add it here once deployed.
-    "ALLOWED_ORIGINS": "http://localhost:3000"
+    // Comma-separated.
+    "ALLOWED_ORIGINS": "http://localhost:3000,http://localhost:3001,http://localhost:8788,https://blog-web.batmancodes2.workers.dev"
   },
   "d1_databases": [
     {

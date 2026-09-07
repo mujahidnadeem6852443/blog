@@ -7,6 +7,8 @@ web/out/
 
 # Cloudflare
 api/.wrangler/
+web/.wrangler/
+web/.open-next/
 .wrangler/
 
 # env / secrets

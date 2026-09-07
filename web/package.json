@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -14,11 +16,13 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.129.0"
   }
 }

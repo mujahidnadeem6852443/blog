@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# NEXT_PUBLIC_* values only — no secrets, needed for reproducible builds
+!.env.production
 
 # vercel
 .vercel
