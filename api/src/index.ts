@@ -1,144 +1,72 @@
-import { generateSessionToken, hashToken, verifyPassword } from "./auth";
+import { corsHeaders, handlePreflight, resolveCorsOrigin } from "./cors";
+import { json } from "./http";
+import {
+  createPost,
+  deletePost,
+  getPostById,
+  getPublishedPost,
+  listAllPosts,
+  listPublishedPosts,
+  updatePost,
+} from "./posts";
+import { handleLogin, handleLogout, handleSessionCheck, requireSession } from "./session";
+import type { Env } from "./types";
 
-export interface Env {
-  DB: D1Database;
-  ADMIN_PASSWORD_HASH: string;
-}
+export type { Env };
 
-const SESSION_COOKIE = "session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_SECONDS = 15 * 60;
+async function route(request: Request, env: Env): Promise<Response> {
+  const { pathname } = new URL(request.url);
+  const { method } = request;
 
-function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json", ...headers },
-  });
-}
+  if (pathname === "/") return json({ status: "ok" });
 
-function serializeCookie(name: string, value: string, maxAgeSeconds: number): string {
-  return `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
-}
+  if (pathname === "/api/login" && method === "POST") return handleLogin(request, env);
+  if (pathname === "/api/logout" && method === "POST") return handleLogout(request, env);
+  if (pathname === "/api/session" && method === "GET") return handleSessionCheck(request, env);
 
-function clearCookie(name: string): string {
-  return `${name}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
-}
+  if (pathname === "/api/posts" && method === "GET") return listPublishedPosts(env);
 
-function getCookie(request: Request, name: string): string | null {
-  const header = request.headers.get("Cookie");
-  if (!header) return null;
-  const match = header.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-  return match ? match[1] : null;
-}
+  const publicPostMatch = pathname.match(/^\/api\/posts\/([^/]+)$/);
+  if (publicPostMatch && method === "GET") return getPublishedPost(env, publicPostMatch[1]);
 
-async function getValidSession(
-  request: Request,
-  env: Env,
-): Promise<{ tokenHash: string } | null> {
-  const token = getCookie(request, SESSION_COOKIE);
-  if (!token) return null;
+  if (pathname.startsWith("/api/admin/")) {
+    const unauthorized = await requireSession(request, env);
+    if (unauthorized) return unauthorized;
 
-  const tokenHash = await hashToken(token);
-  const now = Math.floor(Date.now() / 1000);
-  const row = await env.DB.prepare("SELECT expires_at FROM sessions WHERE token_hash = ?")
-    .bind(tokenHash)
-    .first<{ expires_at: number }>();
+    if (pathname === "/api/admin/posts") {
+      if (method === "GET") return listAllPosts(env);
+      if (method === "POST") return createPost(request, env);
+    }
 
-  if (!row || row.expires_at < now) return null;
-  return { tokenHash };
-}
-
-// Exported so admin routes (posts CRUD, etc.) can require a valid session.
-export async function requireSession(request: Request, env: Env): Promise<Response | null> {
-  const session = await getValidSession(request, env);
-  return session ? null : json({ error: "Unauthorized" }, 401);
-}
-
-async function handleLogin(request: Request, env: Env): Promise<Response> {
-  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-  const now = Math.floor(Date.now() / 1000);
-
-  const attempt = await env.DB.prepare(
-    "SELECT failed_count, locked_until FROM login_attempts WHERE ip = ?",
-  )
-    .bind(ip)
-    .first<{ failed_count: number; locked_until: number | null }>();
-
-  if (attempt?.locked_until && attempt.locked_until > now) {
-    return json({ error: "Too many attempts. Try again later." }, 429);
+    const adminPostMatch = pathname.match(/^\/api\/admin\/posts\/([^/]+)$/);
+    if (adminPostMatch) {
+      const id = adminPostMatch[1];
+      if (method === "GET") return getPostById(env, id);
+      if (method === "PUT") return updatePost(request, env, id);
+      if (method === "DELETE") return deletePost(env, id);
+    }
   }
 
-  let body: { password?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "Invalid request body" }, 400);
-  }
-
-  if (typeof body.password !== "string" || body.password.length === 0) {
-    return json({ error: "Password required" }, 400);
-  }
-
-  const valid = await verifyPassword(body.password, env.ADMIN_PASSWORD_HASH);
-
-  if (!valid) {
-    const failedCount = (attempt?.failed_count ?? 0) + 1;
-    const lockedUntil = failedCount >= MAX_LOGIN_ATTEMPTS ? now + LOCKOUT_SECONDS : null;
-    await env.DB.prepare(
-      `INSERT INTO login_attempts (ip, failed_count, locked_until) VALUES (?, ?, ?)
-       ON CONFLICT(ip) DO UPDATE SET failed_count = excluded.failed_count, locked_until = excluded.locked_until`,
-    )
-      .bind(ip, failedCount, lockedUntil)
-      .run();
-    return json({ error: "Invalid password" }, 401);
-  }
-
-  await env.DB.prepare("DELETE FROM login_attempts WHERE ip = ?").bind(ip).run();
-
-  const token = generateSessionToken();
-  const tokenHash = await hashToken(token);
-  const expiresAt = now + SESSION_TTL_SECONDS;
-  await env.DB.prepare("INSERT INTO sessions (token_hash, created_at, expires_at) VALUES (?, ?, ?)")
-    .bind(tokenHash, now, expiresAt)
-    .run();
-
-  return json(
-    { authenticated: true },
-    200,
-    { "set-cookie": serializeCookie(SESSION_COOKIE, token, SESSION_TTL_SECONDS) },
-  );
-}
-
-async function handleLogout(request: Request, env: Env): Promise<Response> {
-  const token = getCookie(request, SESSION_COOKIE);
-  if (token) {
-    const tokenHash = await hashToken(token);
-    await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
-  }
-  return json({ authenticated: false }, 200, { "set-cookie": clearCookie(SESSION_COOKIE) });
-}
-
-async function handleSessionCheck(request: Request, env: Env): Promise<Response> {
-  const session = await getValidSession(request, env);
-  return json({ authenticated: session !== null });
+  return json({ error: "Not found" }, 404);
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+    const preflight = handlePreflight(request, env.ALLOWED_ORIGINS);
+    if (preflight) return preflight;
 
-    if (url.pathname === "/") return json({ status: "ok" });
-    if (url.pathname === "/api/login" && request.method === "POST") {
-      return handleLogin(request, env);
-    }
-    if (url.pathname === "/api/logout" && request.method === "POST") {
-      return handleLogout(request, env);
-    }
-    if (url.pathname === "/api/session" && request.method === "GET") {
-      return handleSessionCheck(request, env);
+    let response: Response;
+    try {
+      response = await route(request, env);
+    } catch (err) {
+      console.error(err);
+      response = json({ error: "Internal server error" }, 500);
     }
 
-    return json({ error: "Not found" }, 404);
+    const origin = resolveCorsOrigin(request, env.ALLOWED_ORIGINS);
+    for (const [key, value] of Object.entries(corsHeaders(origin))) {
+      response.headers.set(key, value);
+    }
+    return response;
   },
 } satisfies ExportedHandler<Env>;
