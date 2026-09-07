@@ -1,4 +1,6 @@
-const PBKDF2_ITERATIONS = 210_000;
+// Cloudflare Workers' PBKDF2 implementation caps iterations at 100,000
+// (Node's WebCrypto allows more, which is why this wasn't caught locally).
+const PBKDF2_ITERATIONS = 100_000;
 
 function toBase64Url(bytes: ArrayBuffer | Uint8Array): string {
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);

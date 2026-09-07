@@ -2,7 +2,8 @@
 // Usage: node scripts/hash-password.mjs "your-password-here"
 // Uses the same PBKDF2 scheme as src/auth.ts so the Worker can verify it.
 
-const PBKDF2_ITERATIONS = 210_000;
+// Must match src/auth.ts — Cloudflare Workers caps PBKDF2 at 100,000 iterations.
+const PBKDF2_ITERATIONS = 100_000;
 
 function toBase64Url(bytes) {
   let binary = "";
